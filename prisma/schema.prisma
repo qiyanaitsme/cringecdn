@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     Int       @id @default(autoincrement())
+  username               String    @unique @db.VarChar(30)
+  email                  String    @unique @db.VarChar(255)
+  passwordHash           String    @map("password_hash") @db.VarChar(255)
+  role       Role       @default(USER)
+  avatar                 String?   @db.VarChar(500)
+  groupName              String?   @map("group_name") @db.VarChar(100)
+  avatarFileSize     Int?
+  totalUploads     Int       @default(0) @map("total_uploads")
+  isBlocked              Boolean   @default(false) @map("is_blocked")
+  blockedAt              DateTime? @map("blocked_at")
+  blockedBy              Int?
+  blockedReason          String?   @map("blocked_reason")
+  mustChangePassword Boolean   @default(true) @map("must_change_password")
+  lastLoginAtRecentIpForceChange   DateTime? @map("last_login_at")
+  recentIp                  Boolean   @default(false) @map("force_change_password")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  images Image[]
+  albums Album[]
+
+  auditLogsCreated AuditLog[] @relation("auditLogActor")
+
+  @@index([email])
+  @@index([username])
+  @@index([role])
+  @@map("users")
+}
+
+model Image {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  fileName     String    @map("file_name") @db.VarChar(255)
+  originalName String    @map("original_name") @db.VarChar(255)
+  mimeType     String    @map("mime_type") @db.VarChar(50)
+  fileSize     Int       @map("file_size")
+  width        Int?
+  height       Int?
+  thumbnailUrl String?   @map("thumbnail_url")
+  isPublic     Boolean   @default(true) @map("is_public")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isPublic])
+  @@index([createdAt])
+  @@map("images")
+}
+
+model Album {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  name        String    @db.VarChar(100)
+  description String?   @db.Text
+  isPublic    Boolean   @default(true) @map("is_public")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isPublic])
+  @@map("albums")
+}
+
+model LoginAttempt {
+  id           String    @id @default(uuid())
+  ipAddress    String    @map("ip_address") @db.VarChar(45)
+  attemptCount Int       @default(1) @map("attempt_count")
+  isBlocked    Boolean   @default(false) @map("is_blocked")
+  firstAttempt DateTime  @default(now()) @map("first_attempt")
+  lastAttempt  DateTime  @default(now()) @map("last_attempt")
+  blockedUntil DateTime? @map("blocked_until")
+
+  @@index([ipAddress, isBlocked])
+  @@map("login_attempts")
+}
+
+model BlockedIp {
+  id          String    @id @default(uuid())
+  ipAddress   String    @unique @map("ip_address") @db.VarChar(45)
+  reason      String
+  blockedBy   String    @map("blocked_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  expiresAt   DateTime? @map("expires_at")
+
+  @@index([ipAddress])
+  @@map("blocked_ips")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?  @map("actor_id")
+  action    String
+  metadata  Json?
+  ipAddress String   @map("ip_address") @db.VarChar(45)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  actor User? @relation("auditLogActor", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum Role {
+  ADMIN
+  MODERATOR
+  USER
+}

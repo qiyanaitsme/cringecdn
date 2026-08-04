@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int       @id @default(autoincrement())
+  username        String    @unique
+  email           String    @unique
+  password        String
+  role            Role      @default(USER)
+  status          UserStatus @default(ACTIVE)
+  imageCount      Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  blocked         Boolean   @default(false)
+  blockedBy       User?     @relation("BlockedBy", fields: [blockedById], references: [id])
+  blockedById     Int?
+  blockedLogs     BlockedLog[]
+  images          Image[]
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+model Image {
+  id              Int       @id @default(autoincrement())
+  fileName        String
+  originalName    String
+  mimeType        String
+  fileSize        Int
+  width           Int?
+  height          Int?
+  path            String
+  thumbnailPath   String?
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  blocked         Boolean   @default(false)
+  blockedBy       User?     @relation("BlockedBy-Image", fields: [blockedById], references: [id])
+  blockedById     Int?
+  downloadCount   Int       @default(0)
+
+  @@map("images")
+}
+
+model Album {
+  id              Int       @id @default(autoincrement())
+  name            String
+  description     String?
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  images          Image[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("albums")
+}
+
+model AuditLog {
+  id              Int       @id @default(autoincrement())
+  userId          Int?
+  user            User?     @relation(fields: [userId], references: [id])
+  action          String
+  resource        String?
+  details         String?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime  @default(now())
+
+  @@map("audit_logs")
+}
+
+model BlockedLog {
+  id              Int       @id @default(autoincrement())
+  ipAddress       String
+  userId          Int?
+  reason          String
+  blockedBy       Int
+  blockedById     User      @relation("BlockedLogs", fields: [blockedById], references: [id])
+  createdAt       DateTime  @default(now())
+
+  @@map("blocked_logs")
+}
+
+model BlockedIp {
+  id              Int       @id @default(autoincrement())
+  ipAddress       String    @unique
+  reason          String?
+  blockedBy       Int
+  blockedById     User      @relation(fields: [blockedById], references: [id])
+  createdAt       DateTime  @default(now())
+
+  @@map("blocked_ips")
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
