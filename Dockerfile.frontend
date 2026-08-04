@@ -1,0 +1,38 @@
+# ImageHost Frontend Dockerfile (Next.js 14)
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --ignore-scripts
+
+COPY frontend ./
+
+RUN npm run build
+
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+
+# Copy entrypoint script
+COPY docker-entrypoint-frontend.sh ./docker-entrypoint-frontend.sh
+RUN chmod +x ./docker-entrypoint-frontend.sh
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+ENTRYPOINT ["./docker-entrypoint-frontend.sh"]
+CMD ["node_modules/.bin/next", "start"]

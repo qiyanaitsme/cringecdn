@@ -1,0 +1,64 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "opencode-goal-plugin"
+  ],
+  "command": {
+    "goal": {
+      "description": "Set a session-scoped goal and auto-continue until complete.",
+      "template": "$ARGUMENTS",
+      "agent": "build"
+    }
+  },
+  "mcp": {
+    "sequential-thinking": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "enabled": true
+    },
+    "filesystem": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:/Users/qiyana/Desktop/ASASA"
+      ],
+      "enabled": true
+    },
+    "context7": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
+      "enabled": true
+    },
+    "fetch": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "fetch-mcp"
+      ],
+      "enabled": true
+    },
+    "memory-bank": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@allpepper/memory-bank-mcp"
+      ],
+      "environment": {
+        "MEMORY_BANK_ROOT": "C:/Users/qiyana/Desktop/ASASA/memory-bank"
+      },
+      "enabled": true
+    }
+  }
+}
